@@ -1,0 +1,97 @@
+##################################################################################################################################
+################################################  MACHINE LEARNING: ASSIGNMENT 1  ################################################
+################################################    UNSUPERVISED CLASSIFICATION   ################################################
+##################################################################################################################################
+
+set.seed(515) # to set the initial seed for random number generators
+
+library(dplyr)       # for data manipulation
+library(ggplot2)     # for data visualization
+library(stringr)     # for string functionality
+library(cluster)     # for general clustering algorithms
+library(factoextra)  # for visualizing cluster results
+library(mclust)	     # for fitting clustering algorithms
+library(viridis)     # for nicer color palettes
+
+####################################################
+############## k-MEANS CLUSTERING ##################
+####################################################
+
+# import the dataset
+setwd("<working directory>") # to set your working directory
+Saccharomyces <- read.delim("<working directory>/Saccharomyces.txt", row.names=1, na.strings="")
+View(Saccharomyces)
+summary(Saccharomyces) # to get an overview of the data
+
+# preparation of the data
+alcoholic.drink <- Saccharomyces$Alcoholic.drink # to create a list with the labels of each instance
+Saccharomyces$Alcoholic.drink <- NULL # to remove the class variable
+Saccharomyces <- as.data.frame(scale(Saccharomyces)) # to normalize the data
+summary(Saccharomyces)
+
+# to check for the optimal value of k
+p1 <- fviz_nbclust(
+  Saccharomyces, 
+  kmeans, 
+  k.max = 25,
+  method = "wss",
+  diss = get_dist(Saccharomyces, method = "manhattan")
+) + ggtitle("(A) Elbow method")
+
+p2 <- fviz_nbclust(
+  Saccharomyces, 
+  kmeans, 
+  k.max = 25,
+  method = "silhouette",
+  diss = get_dist(Saccharomyces, method = "manhattan")
+) + ggtitle("(B) Silhouette method")
+
+p3 <- fviz_nbclust(
+  Saccharomyces, 
+  kmeans, 
+  k.max = 25,
+  method = "gap_stat",
+  diss = get_dist(Saccharomyces, method = "manhattan")
+) + ggtitle("(C) Gap statistic")
+
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1) # to display the plots side by side
+
+# to run the k-means model with 5 centers and 10 random starts:
+Saccharomyces_clustering <- kmeans(Saccharomyces, centers = 5, nstart = 10)
+Saccharomyces_clustering # this will show on screen all the results
+str(Saccharomyces_clustering) # to print the content of the output model
+Saccharomyces_centers <- Saccharomyces_clustering$centers # to extract the cluster centers
+Saccharomyces_centers
+
+# to get a matrix of the match between k-means clusters and environmental sources
+tb.ad <- table(alcoholic.drink, Saccharomyces_clustering$cluster) 
+tb.ad
+tb.ad <- as.data.frame(tb.ad)
+
+# to get a barplot of the correspondence between k-means clusters and environmental sources
+ggplot(data = tb.ad, aes(x = alcoholic.drink, y = Freq, fill = Var2)) + geom_bar(stat="identity") + labs(x="Alcoholic drink", y = "No. instances") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +  guides(fill=guide_legend(title="Cluster")) + scale_fill_viridis_d()
+
+
+####################################################
+############ MODEL-BASED CLUSTERING ################
+####################################################
+
+BIC <- mclustBIC(Saccharomyces) # to fit all possible GMM models, learning the number of components
+plot(BIC) # to plot the evolution of the BIC with respect to the number of components
+
+summary(BIC) # to check the best BIC values (model, number of components)
+
+mod <- Mclust(Saccharomyces, x = BIC) # to run the GMM algorithm using the best model
+summary(mod, parameters = TRUE) # to get a summary of your model
+
+# to get a matrix of the match between GMM components and environmental sources
+table(alcoholic.drink, mod$classification)
+
+tb.ad_gm <- table(alcoholic.drink, mod$classification)
+tb.ad_gm <- as.data.frame(tb.ad_gm)
+
+# to get a barplot of the correspondence between GMM components and environmental sources
+ggplot(data = tb.ad_gm, aes(x = alcoholic.drink, y = Freq, fill = Var2)) + geom_bar(stat="identity") + labs(x="Alcoholic drink", y = "No. instances") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +  guides(fill=guide_legend(title="Cluster")) + scale_fill_viridis_d()
+
+sort(mod$uncertainty, decreasing = TRUE) %>% head(20) # to get the 20 instances with the highest uncertainty in their classification
+mod$uncertainty[mod$uncertainty>=0.1] %>% sort(decreasing = TRUE) # to get the instances with an uncertainty in their classification >=10%

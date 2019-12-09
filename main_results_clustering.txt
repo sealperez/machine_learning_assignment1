@@ -1,0 +1,192 @@
+####################################################
+############   k-MEANS CLUSTERING   ################
+####################################################
+
+> Saccharomyces_clustering
+
+K-means clustering with 5 clusters of sizes 169, 75, 1, 99, 45
+
+Cluster means:
+        ACET     ANISO10    ANISO20    ANISO50      AZAUR     BML200     BML500       CAF40       CAF50      CHX05       CHX1      CUSO4        DMSO      ETOH15
+1  0.3482224  0.09157281 -0.1220555 -0.2070028  0.1089861 -0.1670643 -0.1333279 -0.30161241 -0.34124426 -0.1140379 -0.1878651  0.1448195 -0.01488513  0.04236013
+2 -0.7869217 -0.83357008 -0.7286126 -0.8730799 -0.9096752 -0.8920357 -0.9569017 -0.78034406 -0.72606710 -0.8511054 -0.7324241 -0.5233140 -0.79144134 -1.00905037
+3  1.3943199  1.79387866  3.5409872  4.7154258  3.2948923  6.3008888  3.7611293 -0.29257754  0.12007749  8.4312545 11.6332366 -1.3497406  2.64327162  1.13786586
+4  0.4537388  0.59166906  0.6196139  0.6018328  0.3312454  0.4573963  0.7004931  1.09877225  1.09219530  0.6078331  0.6268777  0.2625709  0.48640282  0.58848690
+5 -1.0254428 -0.29615923  0.2309011  0.8037245  0.3048622  0.9678536  0.4708910  0.02249836  0.08617557  0.3221905  0.2885975 -0.2193494  0.24614526  0.20270770
+       ETOH2      FLUCO      FORM4      FORM5         GAL        GLY           HU         KCL       LICL         MV     NAASO2       NACL1     NACL15       NYST
+1  0.1787175 -0.1877225 -0.1058136 -0.1567385  0.09683536  0.2350193 -0.006488901 -0.07593606 -0.1311615 -0.2462278 -0.1429219 -0.02985473 -0.0410732 -0.1684893
+2 -0.5642542 -0.7901978 -0.9561899 -0.8285839 -0.05416551 -0.5258094 -0.979733122 -0.92065821 -0.9151346 -0.5387576 -0.5942595 -0.85813828 -1.0426209 -0.6149828
+3  5.2810603  3.3716185  1.3956345  1.2085099  2.42100785  5.5370417  2.614828389 -1.58597120 -1.5590187 -1.5456534  2.0921432 -0.58415095 -0.5220684 -0.7164084
+4  0.4889115  0.3382314  0.7349072  0.6869047  0.28513385  0.5599750  0.448385553  0.76250448  0.7685337  0.7562170  0.5729623  0.47434460  0.6054319  0.6541279
+5 -0.9237222  1.2029649  0.3432289  0.4315672 -0.95448936 -1.3612694  0.612702451  0.17734639  0.3616791  0.1933221  0.2201743  0.51177459  0.5716054  0.2345810
+        RIBO        SDS       SORB          T14        T40         T42        XYL
+1  0.2393755 -0.2014240  0.1929129 -0.003577731  0.1263265  0.02630619  0.1637246
+2 -0.4722259 -0.7354955 -0.2103532 -0.976712785 -0.6926684 -0.60895060 -0.3246907
+3  7.0102640 -0.6373590  7.5010229  7.532566567  2.0151121  2.24969724  6.8279822
+4  0.5537386  0.7811392  0.3719872  0.386786046  0.6584917  0.69683395  0.5509187
+5 -1.4859533  0.2779423 -1.3589675  0.622971341 -0.8134407 -0.66690464 -1.4374795
+
+Clustering vector:
+     AAA      AAB      AAC      AAD      AAE      AAK      AAQ      AAR      ACH      ACK      ACL      ACN      ACP      ACQ      ACR      ACS      ACT      ACV 
+       4        2        5        1        1        5        1        2        2        4        5        4        1        3        2        1        1        1 
+     ADA      ADB      ADC      ADE      ADN      ADQ      ADR      ADS      ADV      AEB      AEC      AEF      AEK      AEM      AEN      AEQ      AES      AET 
+       4        1        1        4        4        2        4        4        2        2        2        2        2        2        2        2        2        5 
+     AFA      AFB      AFI      AFK      AFL      AFM      AFN      AFP      AFV      AGA      AGB      AGF      AGH      AGI      AGL      AGN      AGS      AGV 
+       1        4        5        2        5        1        1        5        5        1        1        4        1        1        2        1        1        1 
+     AHD      AHE      AHH      AHI      AHK      AHN      AHP      AHS      AHV      AIA      AIB      AIC      AIF      AIG      AII      AIM      AIN      AIP 
+       1        2        1        1        5        2        5        2        5        1        5        5        1        2        1        1        1        5 
+     AIR      AIT      AKB      AKC      AKD      AKE      AKG      AKH      AKI      AKL      ANA      ANL      ANM      ANQ      ANR      ANS      ANT      ANV 
+       5        2        4        4        1        4        4        4        4        4        4        1        2        4        1        2        2        1 
+     APA      APC      APD      APE      APF      APP      APQ      APR      APS      APT      APV      AQB      AQC      AQE      AQG      AQN      AQP      AQQ 
+       1        2        1        2        1        2        1        1        2        1        1        2        1        5        1        1        5        1 
+     AQR      AQT      ARC      ARP      ARQ      ART      ASA      ASC      ASD      ASE      ASH      ASR      ASS      AST      ASV      ATA      ATH      ATM 
+       1        2        1        4        1        5        5        1        2        4        2        4        5        4        4        4        1        4 
+     ATP      ATV      AVC      AVD      AVH      AVK      AVL      AVM      AVN      AVP      AVQ      AVR      AVS      AVT      AVV      BAA      BAB      BAC 
+       4        2        2        2        1        4        2        1        4        4        4        4        2        2        5        1        1        1 
+     BAD      BAE      BAF      BAV      BBT      BBV      BDL      BEI      BEK      BEM      BEN      BEQ      BER      BES      BFQ      BFR      BHA      BHC 
+       1        2        4        4        1        4        4        1        2        1        4        4        4        1        2        2        4        1 
+     BHD      BHE      BHF      BHG      BHH      BHI      BHK      BHM      BHT      BHV      BIA      BIB      BIC      BIE      BIF      BIG      BIH      BII 
+       2        4        1        1        4        4        4        1        1        1        1        1        4        4        1        1        2        4 
+     BIK      BIL      BIM      BIN      BIP      BIQ      BIS      BIT      BKC      BKE      BKF      BKH      BKI      BKL      BKM      BKP      BKR      BKS 
+       4        4        4        4        4        4        4        4        1        1        4        4        4        1        4        1        1        1 
+     BKT      BLA      BLB      BLC      BLD      BLE      BLF      BLG      BLH      BLI      BLK      BLL      BLM      BLN      BLP      BLQ      BLR      BLS 
+       4        4        1        1        4        1        1        1        1        1        1        1        1        1        5        1        1        2 
+     BLT      BLV      BNE      BNF      BNG      BNH      BNI      BNK      BNM      BNN      BNP      BNQ      BNR      BPB      BPC      BPL      BPM      BPN 
+       1        1        1        1        2        1        1        1        1        1        4        1        4        1        5        4        1        4 
+     BPP      BPQ      BPT      BPV      BQA      BQB      BQE      BQG      BQH      BQI      BQM      BQN      BQP      BQQ      BQS      BQT      BRB      BRC 
+       1        1        1        1        1        4        1        1        1        1        4        4        1        1        1        1        1        1 
+     BRE      BRF      BRH      BRP      BRQ      BSA      BSB      BSC      BSD      BSE      BSG      BSI      BSL      BSM      BSN      BSP      BSR      BSS 
+       1        1        2        2        2        4        4        4        1        1        1        4        1        1        1        4        1        4 
+     BST      BTL      BTN      BTP      BTR      BTS      BVK      BVM      BVT      BVV      CAA      CAB      CAC      CAD      CAE      CAF      CAH      CAI 
+       1        1        1        4        4        2        1        1        5        5        5        5        5        5        2        2        1        1 
+     CAK      CAL      CAM      CAN      CAP      CAQ      CAR      CAS      CAT      CAV      CBA      CBB      CBC      CBD      CBE      CBG      CBH      CBI 
+       1        5        1        5        5        5        5        5        5        5        1        5        5        5        5        4        1        1 
+     CBN      CBR      CDG      CFA      CFB      CFC      CFD      CFE      CFF      CFG      CFI      CFM      CFN      CFP      CFQ      CFR      CFS      CGS 
+       2        2        4        5        1        5        2        4        4        2        1        2        1        1        1        1        1        4 
+     CGT      CGV      CHA      CHB      CHC      CHD      CHE      CHF      CHK      CHV      CLH      CLI      CLK      CLL      CLM      CLN      CLP      CLQ 
+       4        4        4        4        4        4        4        4        4        2        5        2        1        2        2        1        2        1 
+     CLR      CLS      CLT      CLV      CMB      CMC      CMD      CME      CMF      CMG      CMH      CMI      CMK      CML      CMM      CMN      CPB      CPD 
+       2        2        2        2        1        2        1        1        2        1        1        1        1        2        1        1        2        1 
+     CPS      CPT      CQA      CQB      CQQ      CQR      CQT      CQV      CRA      CRB      CRC      CRD      CRG      CRH      CRI      CRK      CRL SACE.GAP 
+       1        4        4        4        2        2        1        1        2        1        2        1        1        1        1        1        1        4 
+SACE.YAC SACE.YAF SACE.YAG SACE.YBX SACE.YBY SACE.YCA SACE.YCD SACE.YCI SACE.YCO SACE.YCP SACE.YCQ 
+       4        5        2        4        1        1        1        1        4        1        4 
+
+Within cluster sum of squares by cluster:
+[1] 3043.898 1660.264    0.000 2765.662 1638.376
+ (between_SS / total_SS =  32.9 %)
+
+Available components:
+
+[1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss" "betweenss"    "size"         "iter"         "ifault" 
+
+> str(Saccharomyces_clustering)
+List of 9
+ $ cluster     : Named int [1:389] 4 2 5 1 1 5 1 2 2 4 ...
+  ..- attr(*, "names")= chr [1:389] "AAA" "AAB" "AAC" "AAD" ...
+ $ centers     : num [1:5, 1:35] 0.348 -0.787 1.394 0.454 -1.025 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : chr [1:5] "1" "2" "3" "4" ...
+  .. ..$ : chr [1:35] "ACET" "ANISO10" "ANISO20" "ANISO50" ...
+ $ totss       : num 13580
+ $ withinss    : num [1:5] 3044 1660 0 2766 1638
+ $ tot.withinss: num 9108
+ $ betweenss   : num 4472
+ $ size        : int [1:5] 169 75 1 99 45
+ $ iter        : int 3
+ $ ifault      : int 0
+ - attr(*, "class")= chr "kmeans"
+
+> Saccharomyces_centers <- Saccharomyces_clustering$centers
+> Saccharomyces_centers
+        ACET     ANISO10    ANISO20    ANISO50      AZAUR     BML200     BML500       CAF40       CAF50      CHX05       CHX1      CUSO4        DMSO      ETOH15
+1  0.3482224  0.09157281 -0.1220555 -0.2070028  0.1089861 -0.1670643 -0.1333279 -0.30161241 -0.34124426 -0.1140379 -0.1878651  0.1448195 -0.01488513  0.04236013
+2 -0.7869217 -0.83357008 -0.7286126 -0.8730799 -0.9096752 -0.8920357 -0.9569017 -0.78034406 -0.72606710 -0.8511054 -0.7324241 -0.5233140 -0.79144134 -1.00905037
+3  1.3943199  1.79387866  3.5409872  4.7154258  3.2948923  6.3008888  3.7611293 -0.29257754  0.12007749  8.4312545 11.6332366 -1.3497406  2.64327162  1.13786586
+4  0.4537388  0.59166906  0.6196139  0.6018328  0.3312454  0.4573963  0.7004931  1.09877225  1.09219530  0.6078331  0.6268777  0.2625709  0.48640282  0.58848690
+5 -1.0254428 -0.29615923  0.2309011  0.8037245  0.3048622  0.9678536  0.4708910  0.02249836  0.08617557  0.3221905  0.2885975 -0.2193494  0.24614526  0.20270770
+       ETOH2      FLUCO      FORM4      FORM5         GAL        GLY           HU         KCL       LICL         MV     NAASO2       NACL1     NACL15       NYST
+1  0.1787175 -0.1877225 -0.1058136 -0.1567385  0.09683536  0.2350193 -0.006488901 -0.07593606 -0.1311615 -0.2462278 -0.1429219 -0.02985473 -0.0410732 -0.1684893
+2 -0.5642542 -0.7901978 -0.9561899 -0.8285839 -0.05416551 -0.5258094 -0.979733122 -0.92065821 -0.9151346 -0.5387576 -0.5942595 -0.85813828 -1.0426209 -0.6149828
+3  5.2810603  3.3716185  1.3956345  1.2085099  2.42100785  5.5370417  2.614828389 -1.58597120 -1.5590187 -1.5456534  2.0921432 -0.58415095 -0.5220684 -0.7164084
+4  0.4889115  0.3382314  0.7349072  0.6869047  0.28513385  0.5599750  0.448385553  0.76250448  0.7685337  0.7562170  0.5729623  0.47434460  0.6054319  0.6541279
+5 -0.9237222  1.2029649  0.3432289  0.4315672 -0.95448936 -1.3612694  0.612702451  0.17734639  0.3616791  0.1933221  0.2201743  0.51177459  0.5716054  0.2345810
+        RIBO        SDS       SORB          T14        T40         T42        XYL
+1  0.2393755 -0.2014240  0.1929129 -0.003577731  0.1263265  0.02630619  0.1637246
+2 -0.4722259 -0.7354955 -0.2103532 -0.976712785 -0.6926684 -0.60895060 -0.3246907
+3  7.0102640 -0.6373590  7.5010229  7.532566567  2.0151121  2.24969724  6.8279822
+4  0.5537386  0.7811392  0.3719872  0.386786046  0.6584917  0.69683395  0.5509187
+5 -1.4859533  0.2779423 -1.3589675  0.622971341 -0.8134407 -0.66690464 -1.4374795
+                  
+> tb.ad
+               
+alcoholic.drink   1   2   3   4   5
+      Beer       13  26   0  12   5
+      Cider       6   5   0   5   0
+      Palm.wine   9   3   0  13   3
+      Sake       22  23   0   2   0
+      Wine      119  18   1  67  37
+
+####################################################
+############ MODEL-BASED CLUSTERING ################
+####################################################
+
+> BIC
+Bayesian Information Criterion (BIC): 
+        EII       VII       EEI       VEI       EVI       VVI       EEE       EVE       VEE       VVE       EEV       VEV       EVV       VVV
+1 -38817.34 -38817.34 -39020.10 -39020.10 -39020.10 -39020.10 -30699.86 -30699.86 -30699.86 -30699.86 -30699.86 -30699.86 -30699.86 -30699.86
+2 -36953.91 -36650.67 -37075.77 -36618.56 -36789.44 -36393.63 -30747.24 -30042.18 -29436.20 -29378.91 -32554.55 -31887.11 -32608.36 -32003.81
+3 -36311.43 -35176.42 -36380.98 -35188.41 -35994.51 -34813.55 -30806.18 -29995.95 -29465.69 -29460.73 -34858.58 -33966.41 -35093.20 -34259.67
+4 -35989.04 -34544.03 -35951.80 -34338.40 -35447.50 -33842.96 -30810.43 -30071.15 -29499.38 -29261.48 -37241.57 -36081.26 -37862.04 -36470.49
+5 -35494.93 -34043.47 -35462.39 -33861.57 -35107.28 -33410.62 -30773.77        NA        NA        NA -40385.16 -38870.64        NA        NA
+6 -35287.44 -33787.58 -35262.08 -33559.73 -35106.93 -33137.49 -30796.19        NA        NA        NA -43615.37 -41274.59        NA        NA
+7 -34898.62 -33448.99 -34851.20 -33292.43 -34411.16 -32979.24 -30686.49        NA        NA        NA -45007.29 -43344.97        NA        NA
+8 -34843.56 -33324.51 -34709.78 -33025.45 -34225.93 -32817.47 -30817.92        NA        NA        NA -47742.07 -45558.72        NA        NA
+9 -34084.55        NA -33866.38        NA        NA        NA -30579.80        NA        NA        NA -51272.85        NA        NA        NA
+
+Top 3 models based on the BIC criterion: 
+    VVE,4     VVE,2     VEE,2 
+-29261.48 -29378.91 -29436.20 
+
+> summary(BIC)
+Best BIC values:
+             VVE,4       VVE,2       VEE,2
+BIC      -29261.48 -29378.9142 -29436.2042
+BIC diff      0.00   -117.4383   -174.7283
+
+> summary(mod, parameters = TRUE)
+---------------------------------------------------- 
+Gaussian finite mixture model fitted by EM algorithm 
+---------------------------------------------------- 
+
+Mclust VVE (ellipsoidal, equal orientation) model with 4 components: 
+
+ log-likelihood   n  df       BIC       ICL
+      -12012.73 389 878 -29261.48 -29271.91
+
+Clustering table:
+  1   2   3   4 
+103  76 150  60 
+
+Mixing probabilities:
+        1         2         3         4 
+0.2683280 0.1942475 0.3773169 0.1601076
+
+> table(alcoholic.drink, mod$classification)
+               
+alcoholic.drink   1   2   3   4
+      Beer       23  26   3   4
+      Cider       1   1  10   4
+      Palm.wine  16   2   9   1
+      Sake        6  38   1   2
+      Wine       57   9 127  49
+
+> sort(mod$uncertainty, decreasing = TRUE) %>% head(20) # 20 instances with the highest uncertainty in their classification
+       CBG        CHA        AKH        AAB        CQT        AKB   SACE.YBY        CMN        CAN        ACT        ARP        BSP        AFK        AKI 
+0.45228570 0.42894792 0.36578988 0.32515059 0.30754524 0.30223696 0.24864101 0.21776084 0.21563360 0.18429651 0.13471098 0.12986123 0.12424619 0.09079091 
+       ACV        CGT        BIS        CBN        BVK        CFC 
+0.08911699 0.05769993 0.05367693 0.05070941 0.04393975 0.04375483
+
+mod$uncertainty[mod$uncertainty>=0.1] %>% sort(decreasing = TRUE) # instances with an uncertainty in their classification >=10%
+      CBG       CHA       AKH       AAB       CQT       AKB  SACE.YBY       CMN       CAN       ACT       ARP       BSP       AFK 
+0.4522857 0.4289479 0.3657899 0.3251506 0.3075452 0.3022370 0.2486410 0.2177608 0.2156336 0.1842965 0.1347110 0.1298612 0.1242462

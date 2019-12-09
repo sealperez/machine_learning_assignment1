@@ -1,0 +1,396 @@
+##################################################################################################################################
+################################################  MACHINE LEARNING: ASSIGNMENT 1  ################################################
+################################################     SUPERVISED CLASSIFICATION    ################################################
+##################################################################################################################################
+
+set.seed(524) # to set the initial seed for random number generators
+
+# to open some of the packages that will be needed for the analysis
+library(mlr)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(WriteXLS)
+library(corrplot)
+library(viridis)
+
+########################
+# PRELIMINARY ANALYSES #
+########################
+
+# Import and prepare the dataset
+setwd("<working directory>") # to set your working directory
+Saccharomyces <- read.delim("<working directory>/Saccharomyces.txt", row.names=1, na.strings="")
+summary(Saccharomyces) # to get an overview of the data
+
+# to create boxplots to inspect the data
+boxplot(Saccharomyces[,2:11],col="steelblue", xlab="", ylab="Relative growth", cex.axis=1, cex.lab=1) # 10 first features
+title(xlab = "Traits", line = 4, cex.lab=1) # to add a label to the x-axis of the boxplot
+
+boxplot(Saccharomyces[,c(22,27,28,34)],col="lightgreen", xlab="", ylab="Relative growth", cex.axis=1, cex.lab=1) # normally-distributed features
+title(xlab = "Traits", line = 4, cex.lab=1) # to add a label to the x-axis of the boxplot
+
+# normality test
+s<-list()
+for (i in 2:36){
+s[[i]]<-shapiro.test(Saccharomyces[,i]) # to perform the normality test on each explanatory variable
+print(s)
+}
+
+p_values<-c() # to extract the p-values
+for (i in 2:36){
+p_values[i]<-s[[i]]$p.value
+}
+p_values<-p_values[2:36]
+p_values_adjusted <-p.adjust(p_values, method = "bonferroni") # to apply Bonferroni correction of p-values for multiple comparisons
+p_values_adjusted
+
+# pairwise correlations (Spearman's rank test) and corrplot
+CM<- rcorr(as.matrix(Saccharomyces[,2:36]), type="spearman") # to obtain the correlation matrix
+attributes(CM)
+r<-as.data.frame(CM$r)
+P<-as.data.frame(CM$P)
+P[upper.tri(P)]<-NA
+class(P)
+Padj<-p.adjust(as.matrix(P), method="bonferroni") # to apply Bonferroni correction of p-values for multiple comparisons
+head(Padj)
+Padj<-matrix(Padj,ncol=35,nrow=35)
+Padj<-as.data.frame(Padj)
+WriteXLS(c("r","P","Padj"),ExcelFileName = "correlation_matrix_Saccharomyces.xlsx",col.names=TRUE,row.names=TRUE) # to export the correlation matrix as an Excel file
+col1 <- colorRampPalette(c("#7F0000", "red", "#FF7F00", "yellow", "white","cyan", "#007FFF", "blue","#00007F")) # to set a color palette
+corrplot(CM$r, method= "color", type = "full", order = "hclust", col = col1(200), p.mat = as.matrix(Padj), sig.level = 0.05,insig="blank", addgrid.col = "grey", tl.cex = 0.8, tl.col = "black") #corrplot_Saccharomyces (lower diagonal shows significant tests) # to get the correlation plot
+
+# to create a new classification task
+task1 <- makeClassifTask(id = "yeasts", data = Saccharomyces, target = "Alcoholic.drink") # class variable: "Alcoholic.drink"
+task1 # to inspect the task
+str(getTaskData(task1)) # to access the underlying data
+getTaskFeatureNames(task1) # to inspect the feature names
+
+# learners
+lrns <- listLearners() # to list the learners
+lrns_mytask<-listLearners(task1) # to get the list of learners available for your task
+
+# performance measures
+listMeasures(task1) # to get the list of performance measures available for your task
+
+accTrainMean<-setAggregation(acc, train.mean) # to define performance measures for the train set (mean values)
+accTrainMean
+bacTrainMean<-setAggregation(bac, train.mean)
+bacTrainMean
+mmceTrainMean<-setAggregation(mmce, train.mean)
+mmceTrainMean
+berTrainMean<-setAggregation(ber, train.mean)
+berTrainMean
+kappaTrainMean<-setAggregation(kappa, train.mean)
+kappaTrainMean
+
+accTrainSD<-setAggregation(acc, train.sd) # to define performance measures for the train set (SD values)
+accTrainSD
+bacTrainSD<-setAggregation(bac, train.sd)
+bacTrainSD
+mmceTrainSD<-setAggregation(mmce, train.sd)
+mmceTrainSD
+berTrainSD<-setAggregation(ber, train.sd)
+berTrainSD
+kappaTrainSD<-setAggregation(kappa, train.sd)
+kappaTrainSD
+
+accTestSD<-setAggregation(acc, test.sd) # to define performance measures for the test set (SD values)
+accTestSD
+bacTestSD<-setAggregation(bac, test.sd)
+bacTestSD
+mmceTestSD<-setAggregation(mmce, test.sd)
+mmceTestSD
+berTestSD<-setAggregation(ber, test.sd)
+berTestSD
+kappaTestSD<-setAggregation(kappa, test.sd)
+kappaTestSD
+
+perf.measures <- list(acc, bac, mmce, ber, kappa, accTestSD, bacTestSD, mmceTestSD, berTestSD, kappaTestSD, accTrainMean, bacTrainMean, mmceTrainMean, berTrainMean, kappaTrainMean, accTrainSD, bacTrainSD, mmceTrainSD, berTrainSD, kappaTrainSD) # to set the list of performance measures that will be used for benchmarking
+
+# resampling strategies
+cv.10f<-makeResampleDesc("CV", predict = "both", iters = 10, stratify = TRUE) # 10-fold cross-validation with stratification for the class variable
+cv.10f
+cv.5f<-makeResampleDesc("CV", predict = "both", iters = 5, stratify = TRUE) # 5-fold cross-validation with stratification for the class variable
+cv.5f
+
+##############################
+# ANALYSIS WITH ALL FEATURES #
+##############################
+
+inner <- cv.5f # inner resampling strategy (5-fold CV)
+outer <- cv.10f # outer resampling strategy (10-fold CV)
+
+## k-NN (with tuning of hyperparameters) ##
+ps1.knn <- makeParamSet(makeDiscreteParam("k", values = c(1,2,3,4,5,6))) # tuning of k
+ctrl1.knn <- makeTuneControlGrid()
+lrn1.knn <- makeTuneWrapper("classif.knn", resampling = inner, par.set = ps1.knn, control = ctrl1.knn, show.info = TRUE)
+
+## SVM (with tuning of hyperparameters) ##
+ps1.svm = makeParamSet(makeDiscreteParam("C", values = c(0.01, 0.03, 0.06, 0.12, 0.25)), # tuning of C
+  makeDiscreteParam("kernel", values = c("vanilladot", "polydot", "rbfdot")), # tuning of the kernel
+  makeDiscreteParam("sigma", values = c(0.5, 1.0, 1.5, 2.0), requires = quote(kernel == "rbfdot")), # tuning of sigma (only for radial kernel!)
+  makeIntegerParam("degree", lower = 2L, upper = 5L, requires = quote(kernel == "polydot")) # tuning of degree (only for polynomial kernel!)
+)
+ctrl1.svm <- makeTuneControlGrid()
+inner <- cv.5f
+lrn1.svm <- makeTuneWrapper("classif.ksvm", resampling = inner, par.set = ps1.svm, control = ctrl1.svm, show.info = TRUE)
+
+## GAUSSIAN PROCESSES (no tuning) ##
+lrn1.gp <- makeLearner("classif.gausspr", predict.type = "prob")
+
+## MULTINOMIAL REGRESSION (no tuning) ##
+lrn1.mr <- makeLearner("classif.multinom", predict.type = "prob")
+
+## BENCHMARKING ##
+lrns1 <- list(lrn1.knn, lrn1.svm, lrn1.gp, lrn1.mr) # list of learners to be compared
+
+res1 <- benchmark(tasks = task1, learners = lrns1, resampling = outer, measures = perf.measures, keep.extract = TRUE, models = TRUE, show.info = TRUE)
+
+getBMRPerformances(res1, as.df = TRUE) # performance results
+getBMRAggrPerformances(res1, as.df = TRUE) # aggregated performance results
+
+getBMRTuneResults(res1, learner.ids = "classif.knn.tuned", as.df = TRUE) # tuning results for k-NN
+getBMRTuneResults(res1, learner.ids = "classif.ksvm.tuned", as.df = TRUE) # tuning results for SVM
+
+getNestedTuneResultsX(res1$results[["yeasts"]][["classif.knn.tuned"]]) # optimal parameters for k-NN
+getNestedTuneResultsX(res1$results[["yeasts"]][["classif.ksvm.tuned"]]) # optimal parameters for SVM
+
+# boxplots of benchmarking results
+p1a <- ggplot(data=getBMRPerformances(res1, as.df = TRUE)[,1:8], aes(x=learner.id,y=acc)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="Classifier", y = "Accuracy") + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for acc
+
+p1b <- ggplot(data=getBMRPerformances(res1, as.df = TRUE)[,1:8], aes(x=learner.id,y=mmce)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Mean misclassification error") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for mmce
+
+gridExtra::grid.arrange(p1a, p1b, nrow = 1)
+
+p1c <- ggplot(data=getBMRPerformances(res1, as.df = TRUE)[,1:8], aes(x=learner.id,y=bac)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="Classifier", y = "Balanced accuracy") + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for bac
+
+p1d <- ggplot(data=getBMRPerformances(res1, as.df = TRUE)[,1:8], aes(x=learner.id,y=ber)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Balanced error rate") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for ber
+
+p1e <- ggplot(data=getBMRPerformances(res1, as.df = TRUE)[,1:8], aes(x=learner.id,y=kappa)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Cohen’s kappa") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for kappa
+
+gridExtra::grid.arrange(p1c, p1d, p1e, nrow = 1)
+
+#######################################
+# UNIVARIATE FEATURE SUBSET SELECTION #
+#######################################
+
+## FILTERING STRATEGY ###
+
+#"FSelectorRcpp_information.gain" --> entropy-based information gain between feature and target
+#fw.perc = 0.3 --> filtered task that keeps the 30% most important features
+
+## k-NN ##
+lrn2.knn <- makeLearner("classif.knn")
+lrn2.knn
+lrn2.knn <- setHyperPars(lrn2.knn, k = 4) # to set k = 4
+lrn2.knn # to double-check the new values of the hyperparameters
+lrn2.knn.wrap<- makeFilterWrapper(learner = lrn2.knn, fw.method = "FSelectorRcpp_information.gain", fw.perc = 0.3)
+lrn2.knn.wrap
+
+## SVM ##
+lrn2.svm <- makeLearner("classif.ksvm")
+lrn2.svm
+lrn2.svm <- setHyperPars(lrn2.svm, kernel = "vanilladot", C = 0.06) # to set kernel = "vanilladot", C = 0.06
+lrn2.svm # to double-check the new values of the hyperparameters
+lrn2.svm.wrap <- makeFilterWrapper(learner = lrn2.svm, fw.method = "FSelectorRcpp_information.gain", fw.perc = 0.3)
+lrn2.svm.wrap
+
+## GAUSSIAN PROCESSES ##
+lrn2.gp <- makeLearner("classif.gausspr", predict.type = "prob")
+lrn2.gp.wrap <- makeFilterWrapper(learner = lrn2.gp, fw.method = "FSelectorRcpp_information.gain", fw.perc = 0.3)
+lrn2.gp.wrap
+
+## MULTINOMIAL REGRESSION ##
+lrn2.mr <- makeLearner("classif.multinom", predict.type = "prob")
+lrn2.mr.wrap <- makeFilterWrapper(learner = lrn2.mr, fw.method = "FSelectorRcpp_information.gain", fw.perc = 0.3)
+lrn2.mr.wrap
+
+## BENCHMARKING ##
+
+lrns2 <- list(lrn2.knn.wrap, lrn2.svm.wrap, lrn2.gp.wrap, lrn2.mr.wrap) # list of learners to be compared
+
+res2 <- benchmark(tasks = task1, learners = lrns2, resampling = cv.10f, measures = perf.measures, keep.extract = TRUE, models = TRUE, show.info = TRUE)
+
+getBMRPerformances(res2, as.df = TRUE) # performance results
+getBMRAggrPerformances(res2, as.df = TRUE) # aggregated performance results
+
+sfeats.knn <- sapply(getBMRModels(res2)[["yeasts"]][["classif.knn.filtered"]], getFilteredFeatures) # to get the list of features selected in each iteration: k-NN
+sfeats.knn
+table.knn <- table(as.vector(sfeats.knn)) # summary table
+table.knn <- as.data.frame(table.knn)
+table.knn$method<-"k-NN"
+table.knn
+sfeats.svm <- sapply(getBMRModels(res2)[["yeasts"]][["classif.ksvm.filtered"]], getFilteredFeatures) # to get the list of features selected in each iteration: SVM
+sfeats.svm
+table.svm <- table(as.vector(sfeats.svm)) # summary table
+table.svm <- as.data.frame(table.svm)
+table.svm$method<-"SVM"
+table.svm
+sfeats.gp <- sapply(getBMRModels(res2)[["yeasts"]][["classif.gausspr.filtered"]], getFilteredFeatures) # to get the list of features selected in each iteration: GP
+sfeats.gp
+table.gp <- table(as.vector(sfeats.gp)) # summary table
+table.gp <- as.data.frame(table.gp)
+table.gp$method<-"GP"
+table.gp
+sfeats.mr <- sapply(getBMRModels(res2)[["yeasts"]][["classif.multinom.filtered"]], getFilteredFeatures) # to get the list of features selected in each iteration: MR
+sfeats.mr
+table.mr <- table(as.vector(sfeats.mr)) # summary table
+table.mr <- as.data.frame(table.mr)
+table.mr$method<-"MR"
+table.mr
+
+table.filtering<-rbind(table.knn,table.svm,table.gp,table.mr) # summary table of filtering results
+
+table.filtering$method <- factor(table.filtering$method,levels = c("MR", "GP", "SVM", "k-NN"))
+
+# heatmap of the filtering selection results
+ggplot(data=table.filtering, aes(x=reorder(Var1, -Freq), y=method)) + geom_tile(color="white",aes(fill = factor(Freq))) + scale_fill_viridis(discrete=TRUE) + labs(x="Selected features", y = "Method") + theme(axis.text.x=element_text(size=10, angle=45), axis.text.y=element_text(size=12), axis.title=element_text(size=14))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank(), axis.ticks = element_blank()) + guides(fill=guide_legend(title="Frequency"))
+
+# boxplots of benchmarking results
+p2a <- ggplot(data=getBMRPerformances(res2, as.df = TRUE)[,1:8], aes(x=learner.id,y=acc)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Accuracy") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for acc
+
+p2b <- ggplot(data=getBMRPerformances(res2, as.df = TRUE)[,1:8], aes(x=learner.id,y=mmce)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Mean misclassification error") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for mmce
+
+gridExtra::grid.arrange(p2a, p2b, nrow = 1)
+
+p2c <- ggplot(data=getBMRPerformances(res2, as.df = TRUE)[,1:8], aes(x=learner.id,y=bac)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Balanced accuracy") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for bac 
+
+p2d <- ggplot(data=getBMRPerformances(res2, as.df = TRUE)[,1:8], aes(x=learner.id,y=ber)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Balanced error rate") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for ber 
+
+p2e <- ggplot(data=getBMRPerformances(res2, as.df = TRUE)[,1:8], aes(x=learner.id,y=kappa)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Cohen’s kappa") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for kappa
+
+gridExtra::grid.arrange(p2c, p2d, p2e, nrow = 1)
+
+
+#########################################
+# MULTIVARIATE FEATURE SUBSET SELECTION #
+#########################################
+
+inner <- cv.5f # inner resampling strategy (5-fold CV)
+outer <- cv.10f # outer resampling strategy (10-fold CV)
+
+## FSS STRATEGY ###
+fss.ctrl <- makeFeatSelControlRandom(maxit = 20L) # multivariate FSS strategy (random search algorithm)
+
+## k-NN ##
+lrn3.knn <- makeLearner("classif.knn")
+lrn3.knn
+lrn3.knn <- setHyperPars(lrn3.knn, k = 4) # to set k = 4
+lrn3.knn # to double-check the new values of the hyperparameters
+lrn3.knn.fss <- makeFeatSelWrapper(lrn3.knn, resampling = inner, control = fss.ctrl, measures = list(acc,bac,mmce,ber,kappa), show.info = TRUE)
+
+## SVM ##
+lrn3.svm <- makeLearner("classif.ksvm")
+lrn3.svm
+lrn3.svm <- setHyperPars(lrn3.svm, kernel = "vanilladot", C = 0.06) # to set kernel = "vanilladot", C = 0.06
+lrn3.svm # to double-check the new values of the hyperparameters
+lrn3.svm.fss <- makeFeatSelWrapper(lrn3.svm, resampling = inner, control = fss.ctrl, measures = list(acc,bac,mmce,ber,kappa), show.info = TRUE)
+
+## GAUSSIAN PROCESSES ##
+lrn3.gp <- makeLearner("classif.gausspr", predict.type = "prob")
+lrn3.gr.fss <- makeFeatSelWrapper(lrn3.gp, resampling = inner, control = fss.ctrl, measures = list(acc,bac,mmce,ber,kappa), show.info = TRUE)
+
+## MULTINOMIAL REGRESSION ##
+lrn3.mr <- makeLearner("classif.multinom", predict.type = "prob")
+lrn3.mr.fss <- makeFeatSelWrapper(lrn3.mr, resampling = inner, control = fss.ctrl, measures = list(acc,bac,mmce,ber,kappa), show.info = TRUE)
+
+## BENCHMARKING ##
+lrns3 <- list(lrn3.knn.fss, lrn3.svm.fss, lrn3.gr.fss, lrn3.mr.fss) # list of learners to be compared
+
+res3 <- benchmark(tasks = task1, learners = lrns3, resampling = outer, measures = perf.measures, keep.extract = TRUE, models = TRUE, show.info = TRUE)
+
+getBMRPerformances(res3, as.df = TRUE) # performance results
+getBMRAggrPerformances(res3, as.df = TRUE) # aggregated performance results
+
+feats.knn <- getBMRFeatSelResults(res3, learner.id = "classif.knn.featsel", drop = TRUE) # to get the list of features selected in each iteration: k-NN
+feats.svm <- getBMRFeatSelResults(res3, learner.id = "classif.ksvm.featsel", drop = TRUE) # to get the list of features selected in each iteration: SVM
+feats.gp <- getBMRFeatSelResults(res3, learner.id = "classif.gausspr.featsel", drop = TRUE) # to get the list of features selected in each iteration: GP
+feats.mr <- getBMRFeatSelResults(res3, learner.id = "classif.multinom.featsel", drop = TRUE) # to get the list of features selected in each iteration: MR
+
+# to get a summary table of the selected features: k-NN
+fss.knn<-c(feats.knn[[1]]$x,feats.knn[[2]]$x,feats.knn[[3]]$x,feats.knn[[4]]$x,feats.knn[[5]]$x,feats.knn[[6]]$x,feats.knn[[7]]$x,feats.knn[[8]]$x,feats.knn[[9]]$x,feats.knn[[10]]$x)
+fss.knn<-as.data.frame(table(fss.knn))
+fss.knn$method<-"k-NN"
+names(fss.knn)[1]<-"Var1"
+fss.knn
+
+# to get a summary table of the selected features: SVM
+fss.svm<-c(feats.svm[[1]]$x,feats.svm[[2]]$x,feats.svm[[3]]$x,feats.svm[[4]]$x,feats.svm[[5]]$x,feats.svm[[6]]$x,feats.svm[[7]]$x,feats.svm[[8]]$x,feats.svm[[9]]$x,feats.svm[[10]]$x)
+fss.svm<-as.data.frame(table(fss.svm))
+fss.svm$method<-"SVM"
+names(fss.svm)[1]<-"Var1"
+fss.svm
+
+# to get a summary table of the selected features: GP
+fss.gp<-c(feats.gp[[1]]$x,feats.gp[[2]]$x,feats.gp[[3]]$x,feats.gp[[4]]$x,feats.gp[[5]]$x,feats.gp[[6]]$x,feats.gp[[7]]$x,feats.gp[[8]]$x,feats.gp[[9]]$x,feats.gp[[10]]$x)
+fss.gp<-as.data.frame(table(fss.gp))
+fss.gp$method<-"GP"
+names(fss.gp)[1]<-"Var1"
+fss.gp
+
+# to get a summary table of the selected features: MR
+fss.mr<-c(feats.mr[[1]]$x,feats.mr[[2]]$x,feats.mr[[3]]$x,feats.mr[[4]]$x,feats.mr[[5]]$x,feats.mr[[6]]$x,feats.mr[[7]]$x,feats.mr[[8]]$x,feats.mr[[9]]$x,feats.mr[[10]]$x)
+fss.mr<-as.data.frame(table(fss.mr))
+fss.mr$method<-"MR"
+names(fss.mr)[1]<-"Var1"
+fss.mr
+
+table.fss<-rbind(fss.knn, fss.svm, fss.gp, fss.mr)
+
+table.fss$method <- factor(table.fss$method,levels = c("MR", "GP", "SVM", "k-NN"))
+
+# heatmap of the FSS selection results
+ggplot(data=table.fss, aes(x=reorder(Var1, -Freq), y=method)) + geom_tile(color="white",aes(fill = factor(Freq))) + scale_fill_viridis(discrete=TRUE) + labs(x="Selected features", y = "Method") + theme(axis.text.x=element_text(size=10, angle=45), axis.text.y=element_text(size=12), axis.title=element_text(size=14))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.border = element_blank(), panel.background = element_blank(), axis.ticks = element_blank()) + guides(fill=guide_legend(title="Frequency"))
+
+# boxplots of benchmarking results
+p3a <- ggplot(data=getBMRPerformances(res3, as.df = TRUE)[,1:8], aes(x=learner.id,y=acc)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Accuracy") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for acc
+
+p3b <- ggplot(data=getBMRPerformances(res3, as.df = TRUE)[,1:8], aes(x=learner.id,y=mmce)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Mean misclassification error") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for mmce
+
+gridExtra::grid.arrange(p3a, p3b, nrow = 1)
+
+p3c <- ggplot(data=getBMRPerformances(res3, as.df = TRUE)[,1:8], aes(x=learner.id,y=bac)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Balanced accuracy") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for bac  
+
+p3d <- ggplot(data=getBMRPerformances(res3, as.df = TRUE)[,1:8], aes(x=learner.id,y=ber)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Balanced error rate") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for ber 
+
+p3e <- ggplot(data=getBMRPerformances(res3, as.df = TRUE)[,1:8], aes(x=learner.id,y=kappa)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + scale_x_discrete(labels=c("k-NN", "SVM", "GP", "MR")) + theme(legend.position="none") + labs(x="Classifier", y = "Cohen’s kappa") + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for kappa
+
+gridExtra::grid.arrange(p3c, p3d, p3e, nrow = 1)
+
+
+###################
+# METACLASSIFIERS #
+###################
+
+# classif.adaboostm1: ada Boosting M1
+# classif.cforest: Random Forest based on conditional inference trees
+
+meta.ab <- makeLearner("classif.adaboostm1")
+meta.ab
+# to set the base learner (SVM) and its hyperparameters (linear kernel, C = 0.06), using RWeka notation
+meta.ab <- setHyperPars(meta.ab, W = list("weka.classifiers.functions.SMO", C = 0.06, K = "weka.classifiers.functions.supportVector.PolyKernel -E 1.0 -C 250007"))
+meta.ab$par.vals # to check the new values for the hyperparameters
+
+meta.cf <- makeLearner("classif.cforest")
+meta.cf$par.set # to check the settings for Random Forest
+
+## BENCHMARKING ##
+lrns4 <- list(meta.ab, meta.cf) # list of learners to be compared
+res4 <- benchmark(tasks = task1, learners = lrns4, resampling = cv.10f, measures = perf.measures, keep.extract = TRUE, models = TRUE, show.info = TRUE)
+
+getBMRPerformances(res4, as.df = TRUE) # performance results
+getBMRAggrPerformances(res4, as.df = TRUE) # aggregated performance results
+
+# boxplots of benchmarking results
+p4a <- ggplot(data=getBMRPerformances(res4, as.df = TRUE)[,1:8], aes(x=learner.id,y=acc)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="MetaClassifier", y = "Accuracy") + scale_x_discrete(labels=c("AdaBoost", "Random Forests")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for acc
+
+p4b <- ggplot(data=getBMRPerformances(res4, as.df = TRUE)[,1:8], aes(x=learner.id,y=mmce)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="MetaClassifier", y = "Mean misclassification error") + scale_x_discrete(labels=c("AdaBoost", "Random Forests")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for mmce
+
+p4c <- ggplot(data=getBMRPerformances(res4, as.df = TRUE)[,1:8], aes(x=learner.id,y=bac)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="MetaClassifier", y = "Balanced accuracy") + scale_x_discrete(labels=c("AdaBoost", "Random Forests")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for bac
+
+p4d <- ggplot(data=getBMRPerformances(res4, as.df = TRUE)[,1:8], aes(x=learner.id,y=ber)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="MetaClassifier", y = "Balanced error rate") + scale_x_discrete(labels=c("AdaBoost", "Random Forests")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for ber
+
+p4e <- ggplot(data=getBMRPerformances(res4, as.df = TRUE)[,1:8], aes(x=learner.id,y=kappa)) + geom_boxplot() + aes(fill = learner.id) + geom_dotplot(binaxis='y', stackdir='center', dotsize=0.5, fill = 'black') + theme(legend.position="none") + labs(x="MetaClassifier", y = "Cohen's kappa") + scale_x_discrete(labels=c("AdaBoost", "Random Forests")) + theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) # boxplot for kappa
+
+gridExtra::grid.arrange(p4a, p4b, p4c, p4d, p4e, nrow = 1)

@@ -1,0 +1,349 @@
+########################
+# PRELIMINARY ANALYSES #
+########################
+
+# NORMALITY TEST: BONFERRONI-CORRECTED P-VALUES
+
+> p_values_adjusted
+ [1] 6.917959e-05 5.467634e-06 8.493610e-15 2.380958e-19 7.427198e-06 7.472943e-18 1.495238e-08 6.208207e-14 1.127122e-15 3.708453e-15 1.865994e-23 2.148862e-14
+[13] 6.832437e-11 5.820075e-04 4.232691e-12 1.014741e-09 9.850902e-04 8.463623e-06 3.532295e-03 3.285772e-11 1.000000e+00 1.507887e-04 3.690419e-11 7.270171e-10
+[25] 3.248686e-20 1.000000e+00 7.897172e-02 1.849511e-11 2.714568e-11 2.005074e-11 5.364093e-14 5.275193e-13 6.633834e-02 4.885394e-13 1.372346e-12
+
+# SUMMARY OF THE CLASSIFICATION TASK
+
+> task1 <- makeClassifTask(id = "yeasts", data = Saccharomyces, target = "Alcoholic.drink") # class variable: "Alcoholic.drink"
+> task1
+Supervised task: yeasts
+Type: classif
+Target: Alcoholic.drink
+Observations: 389
+Features:
+   numerics     factors     ordered functionals 
+         35           0           0           0 
+Missings: FALSE
+Has weights: FALSE
+Has blocking: FALSE
+Has coordinates: FALSE
+Classes: 5
+     Beer     Cider Palm.wine      Sake      Wine 
+       56        16        28        47       242 
+Positive class: NA
+
+##############################
+# ANALYSIS WITH ALL FEATURES #
+##############################
+
+# BENCHMARKING
+
+> getBMRAggrPerformances(res1, as.df = TRUE) # aggregated performance results
+  task.id         learner.id acc.test.mean bac.test.mean mmce.test.mean ber.test.mean kappa.test.mean acc.test.sd bac.test.sd mmce.test.sd ber.test.sd
+1  yeasts  classif.knn.tuned     0.7862998     0.5646000      0.2137002     0.4354000       0.5958809  0.04276441  0.08682220   0.04276441  0.08682220
+2  yeasts classif.ksvm.tuned     0.8254434     0.6072667      0.1745566     0.3927333       0.6659043  0.05834502  0.08156733   0.05834502  0.08156733
+3  yeasts    classif.gausspr     0.7074197     0.3654000      0.2925803     0.6346000       0.3321376  0.03735749  0.04015704   0.03735749  0.04015704
+4  yeasts   classif.multinom     0.7041159     0.5604667      0.2958841     0.4395333       0.5075063  0.04069532  0.08242815   0.04069532  0.08242815
+  kappa.test.sd acc.train.mean bac.train.mean mmce.train.mean ber.train.mean kappa.train.mean acc.train.sd bac.train.sd mmce.train.sd ber.train.sd kappa.train.sd
+1    0.08931225      0.8445969      0.6411865      0.15540306     0.35881354        0.7058984   0.01693529   0.04026225    0.01693529   0.04026225     0.03771782
+2    0.11403614      0.8783100      0.6780108      0.12169004     0.32198918        0.7705649   0.01065923   0.02140289    0.01065923   0.02140289     0.02260681
+3    0.08929482      0.7606346      0.4638204      0.23936542     0.53617955        0.4819511   0.01043941   0.02393345    0.01043941   0.02393345     0.02896966
+4    0.06976401      0.9654315      0.9536702      0.03456846     0.04632982        0.9391941   0.01337847   0.02158449    0.01337847   0.02158449     0.02362657
+
+> getNestedTuneResultsX(res1$results[["yeasts"]][["classif.knn.tuned"]]) # optimal hyperparameters for k-NN
+   k
+1  6
+2  3
+3  4
+4  4
+5  5
+6  3
+7  4
+8  6
+9  3
+10 4
+
+> getNestedTuneResultsX(res1$results[["yeasts"]][["classif.ksvm.tuned"]]) # optimal hyperparameters for SVM
+      C     kernel
+1  0.06 vanilladot
+2  0.06 vanilladot
+3  0.03 vanilladot
+4  0.03 vanilladot
+5  0.06 vanilladot
+6  0.03 vanilladot
+7  0.06 vanilladot
+8  0.12 vanilladot
+9  0.06 vanilladot
+10 0.06 vanilladot
+
+################################
+# UNIVARIATE FEATURE SELECTION #
+################################
+
+# BENCHMARKING
+> getBMRAggrPerformances(res2, as.df = TRUE) # aggregated performance results
+  task.id                learner.id acc.test.mean bac.test.mean mmce.test.mean ber.test.mean kappa.test.mean acc.test.sd bac.test.sd mmce.test.sd ber.test.sd
+1  yeasts      classif.knn.filtered     0.7814828     0.5593333      0.2185172     0.4406667       0.5789259  0.07391738  0.10613641   0.07391738  0.10613641
+2  yeasts     classif.ksvm.filtered     0.8024550     0.5745000      0.1975450     0.4255000       0.6196887  0.07787745  0.11506791   0.07787745  0.11506791
+3  yeasts  classif.gausspr.filtered     0.7383059     0.4247333      0.2616941     0.5752667       0.4539133  0.05511652  0.06338376   0.05511652  0.06338376
+4  yeasts classif.multinom.filtered     0.7923169     0.5653667      0.2076831     0.4346333       0.6030508  0.07080357  0.10998321   0.07080357  0.10998321
+  kappa.test.sd acc.train.mean bac.train.mean mmce.train.mean ber.train.mean kappa.train.mean acc.train.sd bac.train.sd mmce.train.sd ber.train.sd kappa.train.sd
+1     0.1634408      0.8283301      0.6083465       0.1716699      0.3916535        0.6750782  0.013078611   0.02055622   0.013078611   0.02055622     0.02405810
+2     0.1652254      0.8166280      0.6007716       0.1833720      0.3992284        0.6540979  0.008687693   0.01782815   0.008687693   0.01782815     0.01895686
+3     0.1218705      0.7789168      0.4966294       0.2210832      0.5033706        0.5494592  0.016669811   0.03047483   0.016669811   0.03047483     0.03866515
+4     0.1583862      0.8120557      0.5994821       0.1879443      0.4005179        0.6466617  0.011185109   0.01999290   0.011185109   0.01999290     0.02312849
+
+> table.filtering # features selected for each learner after univariate filtering 
+      Var1 Freq method
+1  ANISO10    9   k-NN
+2  ANISO20    3   k-NN
+3  ANISO50    8   k-NN
+4   BML500   10   k-NN
+5    CAF40   10   k-NN
+6    CAF50   10   k-NN
+7    CHX05   10   k-NN
+8     CHX1    6   k-NN
+9    CUSO4   10   k-NN
+10  ETOH15    1   k-NN
+11      HU   10   k-NN
+12   NACL1    3   k-NN
+13  NACL15   10   k-NN
+14 ANISO10    9    SVM
+15 ANISO20    3    SVM
+16 ANISO50    8    SVM
+17  BML500   10    SVM
+18   CAF40   10    SVM
+19   CAF50   10    SVM
+20   CHX05   10    SVM
+21    CHX1    6    SVM
+22   CUSO4   10    SVM
+23  ETOH15    1    SVM
+24      HU   10    SVM
+25   NACL1    3    SVM
+26  NACL15   10    SVM
+27 ANISO10    9     GP
+28 ANISO20    3     GP
+29 ANISO50    8     GP
+30  BML500   10     GP
+31   CAF40   10     GP
+32   CAF50   10     GP
+33   CHX05   10     GP
+34    CHX1    6     GP
+35   CUSO4   10     GP
+36  ETOH15    1     GP
+37      HU   10     GP
+38   NACL1    3     GP
+39  NACL15   10     GP
+40 ANISO10    9     MR
+41 ANISO20    3     MR
+42 ANISO50    8     MR
+43  BML500   10     MR
+44   CAF40   10     MR
+45   CAF50   10     MR
+46   CHX05   10     MR
+47    CHX1    6     MR
+48   CUSO4   10     MR
+49  ETOH15    1     MR
+50      HU   10     MR
+51   NACL1    3     MR
+52  NACL15   10     MR
+
+#########################################
+# MULTIVARIATE FEATURE SUBSET SELECTION #
+#########################################
+
+# BENCHMARKING
+> getBMRAggrPerformances(res3, as.df = TRUE) # aggregated performance results
+  task.id               learner.id acc.test.mean bac.test.mean mmce.test.mean ber.test.mean kappa.test.mean acc.test.sd bac.test.sd mmce.test.sd ber.test.sd
+1  yeasts      classif.knn.featsel     0.7741723     0.5285667      0.2258277     0.4714333       0.5722946  0.07407691  0.09621042   0.07407691  0.09621042
+2  yeasts     classif.ksvm.featsel     0.8069928     0.5753667      0.1930072     0.4246333       0.6275261  0.07866231  0.11289342   0.07866231  0.11289342
+3  yeasts  classif.gausspr.featsel     0.7507401     0.4469333      0.2492599     0.5530667       0.4653845  0.03918607  0.06722705   0.03918607  0.06722705
+4  yeasts classif.multinom.featsel     0.7355514     0.5066000      0.2644486     0.4934000       0.5200119  0.05555512  0.05771253   0.05555512  0.05771253
+  kappa.test.sd acc.train.mean bac.train.mean mmce.train.mean ber.train.mean kappa.train.mean acc.train.sd bac.train.sd mmce.train.sd ber.train.sd kappa.train.sd
+1    0.13751792      0.8400494      0.6375639       0.1599506      0.3624361        0.6986993  0.008947609   0.02056755   0.008947609   0.02056755     0.01765991
+2    0.16338024      0.8426218      0.6273214       0.1573782      0.3726786        0.7009915  0.016076366   0.02869927   0.016076366   0.02869927     0.03345275
+3    0.09320786      0.7886474      0.5123689       0.2113526      0.4876311        0.5617937  0.012094830   0.03200862   0.012094830   0.03200862     0.03092531
+4    0.08487636      0.8400152      0.6527257       0.1599848      0.3472743        0.7018330  0.022953773   0.05531803   0.022953773   0.05531803     0.04770929
+
+> table.fss # features selected for each learner after multivariate FSS 
+       Var1 Freq method
+1      ACET    6   k-NN
+2   ANISO10    6   k-NN
+3   ANISO20    3   k-NN
+4   ANISO50    7   k-NN
+5     AZAUR    4   k-NN
+6    BML200    7   k-NN
+7    BML500    8   k-NN
+8     CAF40    8   k-NN
+9     CAF50    3   k-NN
+10    CHX05    7   k-NN
+11     CHX1    5   k-NN
+12    CUSO4   10   k-NN
+13     DMSO    6   k-NN
+14   ETOH15    8   k-NN
+15    ETOH2    2   k-NN
+16    FLUCO    6   k-NN
+17    FORM4    4   k-NN
+18    FORM5    5   k-NN
+19      GAL    6   k-NN
+20      GLY    5   k-NN
+21       HU    9   k-NN
+22      KCL    6   k-NN
+23     LICL    5   k-NN
+24       MV    9   k-NN
+25   NAASO2    6   k-NN
+26    NACL1    6   k-NN
+27   NACL15    6   k-NN
+28     NYST    6   k-NN
+29     RIBO    5   k-NN
+30      SDS    3   k-NN
+31     SORB    2   k-NN
+32      T14    5   k-NN
+33      T40    4   k-NN
+34      T42    5   k-NN
+35      XYL    4   k-NN
+36     ACET    5    SVM
+37  ANISO10    4    SVM
+38  ANISO20    6    SVM
+39  ANISO50    5    SVM
+40    AZAUR    6    SVM
+41   BML200    5    SVM
+42   BML500    9    SVM
+43    CAF40    6    SVM
+44    CAF50    8    SVM
+45    CHX05    4    SVM
+46     CHX1    4    SVM
+47    CUSO4   10    SVM
+48     DMSO    6    SVM
+49   ETOH15    8    SVM
+50    ETOH2    6    SVM
+51    FLUCO    6    SVM
+52    FORM4    5    SVM
+53    FORM5    3    SVM
+54      GAL    5    SVM
+55      GLY    6    SVM
+56       HU    6    SVM
+57      KCL    6    SVM
+58     LICL    3    SVM
+59       MV    6    SVM
+60   NAASO2    3    SVM
+61    NACL1    7    SVM
+62   NACL15    8    SVM
+63     NYST    4    SVM
+64     RIBO    4    SVM
+65      SDS    4    SVM
+66     SORB    6    SVM
+67      T14    2    SVM
+68      T40    6    SVM
+69      T42    3    SVM
+70      XYL    2    SVM
+71     ACET    5     GP
+72  ANISO10    7     GP
+73  ANISO20    3     GP
+74  ANISO50    1     GP
+75    AZAUR    8     GP
+76   BML200    6     GP
+77   BML500    7     GP
+78    CAF40    4     GP
+79    CAF50    5     GP
+80    CHX05    5     GP
+81     CHX1    1     GP
+82    CUSO4   10     GP
+83     DMSO    4     GP
+84   ETOH15    8     GP
+85    ETOH2    3     GP
+86    FLUCO    4     GP
+87    FORM4    5     GP
+88    FORM5    5     GP
+89      GAL    1     GP
+90      GLY    3     GP
+91       HU    6     GP
+92      KCL    4     GP
+93     LICL    3     GP
+94       MV    5     GP
+95   NAASO2    6     GP
+96    NACL1    6     GP
+97   NACL15    6     GP
+98     NYST    4     GP
+99     RIBO    1     GP
+100     SDS    4     GP
+101    SORB    5     GP
+102     T14    4     GP
+103     T40    3     GP
+104     T42    5     GP
+105     XYL    3     GP
+106    ACET    6     MR
+107 ANISO10    2     MR
+108 ANISO20    5     MR
+109 ANISO50    1     MR
+110   AZAUR    4     MR
+111  BML200    3     MR
+112  BML500    8     MR
+113   CAF40    6     MR
+114   CAF50    5     MR
+115   CHX05    4     MR
+116    CHX1    4     MR
+117   CUSO4    6     MR
+118    DMSO    5     MR
+119  ETOH15    7     MR
+120   ETOH2    5     MR
+121   FLUCO    6     MR
+122   FORM4    4     MR
+123   FORM5    5     MR
+124     GAL    3     MR
+125     GLY    5     MR
+126      HU    7     MR
+127     KCL    3     MR
+128    LICL    3     MR
+129      MV    5     MR
+130  NAASO2    2     MR
+131   NACL1    5     MR
+132  NACL15    4     MR
+133    NYST    7     MR
+134    RIBO    3     MR
+135     SDS    4     MR
+136    SORB    4     MR
+137     T14    4     MR
+138     T40    4     MR
+139     T42    3     MR
+140     XYL    7     MR
+
+################
+# METALEARNERS #
+################
+
+# Hyperparameters for "adaboostm1" (RWeka)
+> getHyperPars(meta.ab)
+$W
+$W[[1]]
+[1] "weka.classifiers.functions.SMO"
+
+$W$C
+[1] 0.06
+
+$W$K
+[1] "weka.classifiers.functions.supportVector.PolyKernel -E 1.0 -C 250007"
+
+# Hyperparameters for "cforest" 
+> meta.cf$par.set
+                   Type len        Def                                   Constr Req Tunable Trafo
+ntree           integer   -        500                                 1 to Inf   -    TRUE     -
+mtry            integer   -          5                                 1 to Inf   -    TRUE     -
+replace         logical   -      FALSE                                        -   -    TRUE     -
+fraction        numeric   -      0.632                                   0 to 1   Y    TRUE     -
+trace           logical   -      FALSE                                        -   -   FALSE     -
+teststat       discrete   -       quad                                 quad,max   -    TRUE     -
+testtype       discrete   - Univariate Bonferroni,MonteCarlo,Univariate,Test...   -    TRUE     -
+mincriterion    numeric   -          0                                 0 to Inf   -    TRUE     -
+minsplit        integer   -         20                                 1 to Inf   -    TRUE     -
+minbucket       integer   -          7                                 1 to Inf   -    TRUE     -
+stump           logical   -      FALSE                                        -   -    TRUE     -
+nresample       integer   -       9999                                 1 to Inf   -    TRUE     -
+maxsurrogate    integer   -          0                                 0 to Inf   -    TRUE     -
+maxdepth        integer   -          0                                 0 to Inf   -    TRUE     -
+savesplitstats  logical   -      FALSE                                        -   -   FALSE     -
+
+> getBMRAggrPerformances(res4, as.df = TRUE) # aggregated performance results
+  task.id         learner.id acc.test.mean bac.test.mean mmce.test.mean ber.test.mean kappa.test.mean acc.test.sd bac.test.sd mmce.test.sd ber.test.sd
+1  yeasts classif.adaboostm1     0.6582657     0.2555333      0.3417343     0.7444667       0.1296828  0.05013331  0.07388349   0.05013331  0.07388349
+2  yeasts    classif.cforest     0.7766201     0.4688667      0.2233799     0.5311333       0.5196617  0.05311707  0.07811438   0.05311707  0.07811438
+  kappa.test.sd acc.train.mean bac.train.mean mmce.train.mean ber.train.mean kappa.train.mean acc.train.sd bac.train.sd mmce.train.sd ber.train.sd kappa.train.sd
+1     0.1644801      0.6618622      0.2613752       0.3381378      0.7386248        0.1535951   0.03777051   0.05869925    0.03777051   0.05869925     0.13618764
+2     0.1295497      0.8506077      0.6002048       0.1493923      0.3997952        0.7026344   0.00830723   0.02203063    0.00830723   0.02203063     0.02078864
